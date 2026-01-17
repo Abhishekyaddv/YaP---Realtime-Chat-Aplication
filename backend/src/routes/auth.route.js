@@ -5,7 +5,7 @@ import { arcjetProtection } from '../middleware/arcjet.middleware.js';
 
 const router = express.Router()
 
-router.use(arcjetProtection) // Here instead of checking each route singularly we can just use arcjet on router method, by which each request can only be run if it passes the arcjet test
+// router.use(arcjetProtection) // Here instead of checking each route singularly we can just use arcjet on router method, by which each request can only be run if it passes the arcjet test
 
 router.post('/signup', signup);
 router.post('/login', login)

@@ -9,80 +9,105 @@ export const useChatStore = create((set, get) => ({
   messages: [],
   activeTab: "chats",
   selectedUser: null,
-  isUserLoading: false,
+  isUsersLoading: false,
   isMessagesLoading: false,
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
 
-
   toggleSound: () => {
-    localStorage.setItem("isSoundEnabled", !get().isSoundEnabled) //this for Updating the local storage 
-    set({ isSoundEnabled: !get().isSoundEnabled }) // this is for the UI updates
+    localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
+    set({ isSoundEnabled: !get().isSoundEnabled });
   },
 
-  setActiveTab: (tab) => set({ activeTab: tab}),
+  setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 
-  getAllContacts: async() => {
-    set({isUserLoading: true});
+  getAllContacts: async () => {
+    set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/contacts");
-      set({ allContacts: res.data }) //update the state after getting data from the backend
-      console.log(res.data);
-      
+      set({ allContacts: res.data });
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error.response.data.message);
     } finally {
-      set({isUserLoading: false})
+      set({ isUsersLoading: false });
     }
   },
-  getMyChatPartners: async() => {
-    set({isUserLoading: true});
+  getMyChatPartners: async () => {
+    set({ isUsersLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/chats")
-      set({chats: res.data})
+      const res = await axiosInstance.get("/messages/chats");
+      set({ chats: res.data });
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error.response.data.message);
     } finally {
-      set({isUserLoading: false})
+      set({ isUsersLoading: false });
     }
-
   },
 
   getMessagesByUserId: async (userId) => {
-    set({isMessagesLoading: true})
+    set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      set({messages: res.data})
+      set({ messages: res.data });
     } catch (error) {
-        toast.error(error.response?.data?.message || "something went wrong")
-    } finally{
-      set({isMessagesLoading: false})
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      set({ isMessagesLoading: false });
     }
   },
-  sendMessage: async (messageData) => {
-    const {selectedUser, messages} = get(); //here we lifited the state 
-    const {authUser} = useAuthStore.getState(); //using austand package we can access the state value from one page to another
 
-    const tempId = `temp-${Date.now()}`
+  sendMessage: async (messageData) => {
+    const { selectedUser, messages } = get();
+    const { authUser } = useAuthStore.getState();
+
+    const tempId = `temp-${Date.now()}`;
 
     const optimisticMessage = {
       _id: tempId,
       senderId: authUser._id,
-      reciverId: selectedUser._id,
-      text: messageData.image,
+      receiverId: selectedUser._id,
+      text: messageData.text,
+      image: messageData.image,
       createdAt: new Date().toISOString(),
-      isOptimistic: true
-    }
+      isOptimistic: true, // flag to identify optimistic messages (optional)
+    };
+    // immidetaly update the ui by adding the message
+    set({ messages: [...messages, optimisticMessage] });
 
-    // immediately update the UI by adding temporary data then change it to original one
-    set({messages: [...messages, optimisticMessage]})
     try {
-      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData)
-      set({messages: messages.concat(res.data)})
+      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
+      set({ messages: messages.concat(res.data) });
     } catch (error) {
-      // remove optimistic message on faliure
-        set({messages: messages})
-        toast.error(error.response?.data?.message || "Something went wrong")
+      // remove optimistic message on failure
+      set({ messages: messages });
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
-  }
-}))
+  },
+
+  subscribeToMessages: () => {
+    const { selectedUser, isSoundEnabled } = get();
+    if (!selectedUser) return;
+
+    const socket = useAuthStore.getState().socket;
+
+    socket.on("newMessage", (newMessage) => {
+      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
+      if (!isMessageSentFromSelectedUser) return;
+
+      const currentMessages = get().messages;
+      set({ messages: [...currentMessages, newMessage] });
+
+      if (isSoundEnabled) {
+        const notificationSound = new Audio("/sounds/notification.mp3");
+
+        notificationSound.currentTime = 0; // reset to start
+        notificationSound.play().catch((e) => console.log("Audio play failed:", e));
+      }
+    });
+  },
+
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket.off("newMessage");
+  },
+}));

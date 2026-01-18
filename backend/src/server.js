@@ -13,7 +13,7 @@ const app = express();
 const __dirname = path.resolve();
 const port = ENV.PORT || 3000;
 
-app.use(express.json()); //req.body (to get the jason data from the user)
+app.use(express.json({ limit: "5mb"})); //req.body (to get the jason data from the user)
 app.use(cors ({origin: ENV.CLIENT_URL, credentials: true}))
 app.use(cookieParser())
 

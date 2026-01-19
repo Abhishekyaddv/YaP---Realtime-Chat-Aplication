@@ -2,7 +2,9 @@
 
 A modern, full-stack real-time messaging application built with the **MERN** stack. Features instant messaging, live user status updates, and a sleek, glassmorphic UI powered by TailwindCSS and DaisyUI.
 
-![Project Preview](preview1.png)
+![Project Preview](previewSignup.png)
+![Project Preview](previewLogin.png)
+![Project Preview](previewChatPage.png)
 
 
 Watch Live Demo : https://www.linkedin.com/posts/abhishekyaaddv_mernstack-reactjs-socketio-activity-7418994060532690946-xhRA?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEqVf3ABHWe6TWfrWmuKhvdWDAbjb6jvuC8
